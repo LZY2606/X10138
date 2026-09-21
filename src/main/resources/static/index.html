@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="utf-8">
+<title>语义配置合并器</title>
+<style>
+  * { box-sizing: border-box; }
+  body { font-family: -apple-system, "PingFang SC", sans-serif; margin: 0; background: #f5f6f8; color: #222; }
+  header { background: #1f2937; color: #fff; padding: 10px 16px; display: flex; align-items: center; gap: 12px; }
+  header h1 { font-size: 18px; margin: 0; }
+  header button { margin-left: auto; }
+  section { background: #fff; margin: 10px; padding: 10px 14px; border-radius: 8px; box-shadow: 0 1px 2px rgba(0,0,0,.06); }
+  h2 { font-size: 14px; margin: 4px 0 8px; color: #374151; }
+  button { background: #2563eb; color: #fff; border: 0; border-radius: 5px; padding: 5px 12px; cursor: pointer; font-size: 13px; }
+  button.ghost { background: #e5e7eb; color: #111; }
+  select, input, textarea { font-size: 13px; padding: 4px 6px; border: 1px solid #d1d5db; border-radius: 5px; }
+  textarea { width: 100%; font-family: ui-monospace, monospace; }
+  .row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin: 6px 0; }
+  .cols { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
+  .col { background: #fafafa; border: 1px solid #e5e7eb; border-radius: 6px; padding: 8px; max-height: 420px; overflow: auto; }
+  .col h3 { margin: 0 0 6px; font-size: 13px; color: #6b7280; }
+  .node { padding: 1px 4px; border-radius: 4px; cursor: pointer; white-space: nowrap; font-family: ui-monospace, monospace; font-size: 12px; }
+  .node:hover { background: #e0e7ff; }
+  .node.selected { background: #c7d2fe; }
+  .node.conflict { color: #b91c1c; font-weight: 600; }
+  .conflict-badge { color: #b91c1c; font-size: 11px; }
+  .kv { font-size: 12px; margin: 2px 0; }
+  .kv b { color: #374151; }
+  .chain { color: #6b7280; font-size: 11px; }
+  .conflict-card { border: 1px solid #fecaca; background: #fff7f7; border-radius: 6px; padding: 8px; margin: 6px 0; }
+  .conflict-card.resolved { border-color: #bbf7d0; background: #f0fdf4; }
+  .conflict-card.auto { border-color: #bfdbfe; background: #eff6ff; }
+  .item { font-size: 12px; color: #374151; }
+  #msg { color: #b91c1c; font-size: 13px; min-height: 18px; }
+  .pill { font-size: 11px; background: #e5e7eb; border-radius: 10px; padding: 1px 8px; }
+  pre { background: #111827; color: #d1fae5; padding: 8px; border-radius: 6px; overflow: auto; font-size: 12px; max-height: 300px; }
+  table { border-collapse: collapse; font-size: 12px; }
+  td, th { border: 1px solid #e5e7eb; padding: 3px 8px; }
+</style>
+</head>
+<body>
+<header>
+  <h1>语义配置合并器</h1>
+  <span class="pill" id="policyVer">策略 v0</span>
+  <button onclick="loadDemo()">载入示例</button>
+</header>
+
+<section>
+  <h2>文档（原始输入持久化）</h2>
+  <div class="row" id="docList"></div>
+  <div class="row">
+    <input id="docName" placeholder="名称" size="12">
+    <select id="docFormat"><option value="yaml">YAML</option><option value="json">JSON</option></select>
+  </div>
+  <textarea id="docText" rows="4" placeholder="粘贴 YAML / JSON 配置"></textarea>
+  <div class="row"><button class="ghost" onclick="addDoc()">添加文档</button></div>
+</section>
+
+<section>
+  <h2>数组路径策略（未登记策略时不会猜测）</h2>
+  <div class="row">
+    <input id="polPath" placeholder="路径 如 /features" size="20">
+    <select id="polStrategy">
+      <option value="replace">替换</option>
+      <option value="by_id">按稳定 id 合并</option>
+      <option value="ordered">有序序列</option>
+    </select>
+    <input id="polIdKey" placeholder="id 键(默认 id)" size="10">
+    <button class="ghost" onclick="addPolicy()">登记策略</button>
+  </div>
+  <table id="polTable"></table>
+</section>
+
+<section>
+  <h2>三方合并</h2>
+  <div class="row">
+    祖先 <select id="selBase"></select>
+    分支 A <select id="selOurs"></select>
+    分支 B <select id="selTheirs"></select>
+    <button onclick="startMerge()">开始合并</button>
+    <span id="mergeInfo"></span>
+  </div>
+  <div id="msg"></div>
+  <div class="cols">
+    <div class="col"><h3>共同祖先</h3><div id="treeBase"></div></div>
+    <div class="col"><h3>分支 A</h3><div id="treeOurs"></div></div>
+    <div class="col"><h3>分支 B</h3><div id="treeTheirs"></div></div>
+  </div>
+</section>
+
+<section>
+  <h2>节点详情</h2>
+  <div id="nodeDetail">点击左侧树节点查看来源与冲突原因。</div>
+</section>
+
+<section>
+  <h2>冲突裁决（逐项选择，一次提交；过期版本会被拒绝）</h2>
+  <div id="conflictList"></div>
+  <div class="row">
+    <button onclick="submitResolutions()">提交全部裁决</button>
+    <span id="verInfo"></span>
+  </div>
+</section>
+
+<section>
+  <h2>已自动合并项</h2>
+  <div id="itemList"></div>
+</section>
+
+<section>
+  <h2>导出预览</h2>
+  <div class="row">
+    <select id="expFormat"><option value="yaml">YAML</option><option value="json">JSON</option></select>
+    <button class="ghost" onclick="doExport()">生成导出</button>
+    <span id="expFp"></span>
+  </div>
+  <pre id="expText">（解决全部冲突后可导出）</pre>
+</section>
+
+<script>
+let state = null, session = null, pending = {};
+
+async function api(path, method, body) {
+  const res = await fetch('/api/' + path, {
+    method: method || 'GET',
+    headers: {'Content-Type': 'application/json'},
+    body: body ? JSON.stringify(body) : undefined
+  });
+  const data = await res.json();
+  if (!res.ok) {
+    if (res.status === 409) throw {conflict: true, ...data};
+    throw {error: data.error || res.status};
+  }
+  return data;
+}
+
+function esc(s) { return String(s ?? '').replace(/[&<>]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[c])); }
+
+async function refresh() {
+  state = await api('state');
+  document.getElementById('policyVer').textContent = '策略 v' + state.policyVersion;
+  document.getElementById('docList').innerHTML = state.documents.map(d =>
+    `<span class="pill">${esc(d.name)} (${d.format})</span>`).join(' ');
+  for (const id of ['selBase','selOurs','selTheirs']) {
+    document.getElementById(id).innerHTML = state.documents.map(d =>
+      `<option value="${d.id}">${esc(d.name)}</option>`).join('');
+  }
+  renderPolicies();
+}
+
+function renderPolicies() {
+  const rows = Object.entries(state.policies).map(([p, v]) =>
+    `<tr><td>${esc(p)}</td><td>${esc(v.strategy)}</td><td>${esc(v.idKey)}</td></tr>`).join('');
+  document.getElementById('polTable').innerHTML =
+    '<tr><th>路径</th><th>策略</th><th>id 键</th></tr>' + rows;
+}
+
+async function addDoc() {
+  try {
+    await api('documents', 'POST', {
+      name: document.getElementById('docName').value || 'doc',
+      format: document.getElementById('docFormat').value,
+      text: document.getElementById('docText').value
+    });
+    document.getElementById('docText').value = '';
+    await refresh();
+  } catch (e) { showMsg(e.error); }
+}
+
+async function addPolicy() {
+  const p = document.getElementById('polPath').value.trim();
+  if (!p) return;
+  const policies = {...state.policies};
+  policies[p] = {strategy: document.getElementById('polStrategy').value,
+                 idKey: document.getElementById('polIdKey').value || 'id'};
+  await api('policies', 'PUT', {policies});
+  await refresh();
+}
+
+async function loadDemo() {
+  const d = await api('demo', 'POST', {});
+  await refresh();
+  document.getElementById('selBase').value = d.baseId;
+  document.getElementById('selOurs').value = d.oursId;
+  document.getElementById('selTheirs').value = d.theirsId;
+  await startMerge();
+}
+
+async function startMerge() {
+  showMsg('');
+  pending = {};
+  try {
+    session = await api('merges', 'POST', {
+      baseId: document.getElementById('selBase').value,
+      oursId: document.getElementById('selOurs').value,
+      theirsId: document.getElementById('selTheirs').value
+    });
+    renderSession();
+  } catch (e) { showMsg(e.error); }
+}
+
+function conflictPaths() {
+  return new Set((session?.conflicts || []).filter(c => c.status === 'open').map(c => c.path));
+}
+
+function renderTree(node, elId) {
+  const conflicts = conflictPaths();
+  function rec(n, depth) {
+    if (!n || n.type === 'absent') return '';
+    const pad = 'style="padding-left:' + (depth * 14) + 'px"';
+    const isC = conflicts.has(n.path);
+    const label = n.key != null ? esc(n.key) + ': ' : '';
+    const val = n.type === 'scalar' || n.type === 'null' ? esc(n.value) : '';
+    let html = `<div class="node ${isC ? 'conflict' : ''}" data-path="${esc(n.path)}" ${pad}` +
+      ` onclick="selectNode(event,'${esc(n.path)}')">${label}${val}` +
+      (isC ? ' <span class="conflict-badge">⚡冲突</span>' : '') + '</div>';
+    for (const c of (n.children || [])) html += rec(c, depth + 1);
+    return html;
+  }
+  document.getElementById(elId).innerHTML = rec(node, 0);
+}
+
+function findNode(n, path) {
+  if (!n) return null;
+  if (n.path === path) return n;
+  for (const c of (n.children || [])) { const r = findNode(c, path); if (r) return r; }
+  return null;
+}
+
+function selectNode(ev, path) {
+  ev.stopPropagation();
+  document.querySelectorAll('.node.selected').forEach(e => e.classList.remove('selected'));
+  ev.currentTarget.classList.add('selected');
+  const c = (session.conflicts || []).find(x => x.path === path);
+  const n = findNode(session.trees.base, path) || findNode(session.trees.ours, path) ||
+            findNode(session.trees.theirs, path) || findNode(session.trees.result, path);
+  let html = `<div class="kv"><b>路径:</b> ${esc(path || '/')}</div>`;
+  if (n) {
+    html += `<div class="kv"><b>来源:</b> ${esc(n.source || '—')}</div>`;
+    html += `<div class="kv"><b>来源链:</b> <span class="chain">${esc((n.sourceChain || []).join(' → ') || '—')}</span></div>`;
+  }
+  if (c) {
+    html += `<div class="kv"><b>冲突原因:</b> ${esc(c.reason)}（状态: ${esc(c.status)}）</div>`;
+    html += `<div class="kv"><b>祖先:</b> ${esc(JSON.stringify(c.base))} <b>A:</b> ${esc(JSON.stringify(c.ours))} <b>B:</b> ${esc(JSON.stringify(c.theirs))}</div>`;
+  }
+  document.getElementById('nodeDetail').innerHTML = html;
+}
+
+function renderSession() {
+  renderTree(session.trees.base, 'treeBase');
+  renderTree(session.trees.ours, 'treeOurs');
+  renderTree(session.trees.theirs, 'treeTheirs');
+  document.getElementById('mergeInfo').textContent =
+    `合并 ${session.id} · 版本 ${session.version} · 冲突 ${session.conflicts.filter(c=>c.status==='open').length}`;
+  document.getElementById('verInfo').textContent = '当前版本: ' + session.version;
+  renderConflicts();
+  document.getElementById('itemList').innerHTML = session.items.map(i =>
+    `<div class="item">✔ <b>${esc(i.path || '/')}</b> ${esc(i.action)} <span class="chain">${esc(i.sourceChain.join(' → '))}</span></div>`).join('') || '（无）';
+  if (session.suggestions.length) {
+    showMsg('有 ' + session.suggestions.length + ' 条历史裁决因内容已变化仅作为建议，未自动套用。');
+  }
+}
+
+function renderConflicts() {
+  const el = document.getElementById('conflictList');
+  el.innerHTML = session.conflicts.map(c => {
+    const cls = c.status === 'open' ? '' : (c.status === 'resolved' ? 'resolved' : 'auto');
+    let opts = '';
+    if (c.status === 'open') {
+      opts = ['ours:A','theirs:B','base:祖先','null:设为 null','delete:删除'].map(s => {
+        const [v, label] = s.split(':');
+        return `<label><input type="radio" name="r_${c.id}" value="${v}" onchange="pending['${c.id}']={conflictId:'${c.id}',path:'${esc(c.path)}',resolution:'${v}'}"> ${label}</label>`;
+      }).join(' ');
+    } else {
+      opts = `<span class="pill">${esc(c.status)}: ${esc(c.resolution || '')}</span>`;
+    }
+    return `<div class="conflict-card ${cls}">
+      <div class="kv"><b>${esc(c.path)}</b> — ${esc(c.reason)}</div>
+      <div class="kv">祖先: <code>${esc(JSON.stringify(c.base))}</code></div>
+      <div class="kv">A: <code>${esc(JSON.stringify(c.ours))}</code></div>
+      <div class="kv">B: <code>${esc(JSON.stringify(c.theirs))}</code></div>
+      <div class="row">${opts}</div></div>`;
+  }).join('') || '（无冲突）';
+}
+
+async function submitResolutions() {
+  const resolutions = Object.values(pending);
+  if (!resolutions.length) { showMsg('请先为冲突选择裁决'); return; }
+  try {
+    session = await api(`merges/${session.id}/resolve`, 'POST',
+      {expectedVersion: session.version, resolutions});
+    pending = {};
+    renderSession();
+    showMsg('');
+  } catch (e) {
+    if (e.conflict) {
+      showMsg(`版本已过期（当前 ${e.currentVersion}），页面数据已刷新，请重新裁决。`);
+      session = await api('merges/' + session.id);
+      pending = {};
+      renderSession();
+    } else showMsg(e.error);
+  }
+}
+
+async function doExport() {
+  try {
+    const r = await api(`merges/${session.id}/export`, 'POST',
+      {format: document.getElementById('expFormat').value});
+    document.getElementById('expText').textContent = r.text;
+    document.getElementById('expFp').textContent = '指纹: ' + r.fingerprint.slice(0, 16) + '…';
+  } catch (e) { showMsg(e.error); }
+}
+
+function showMsg(m) { document.getElementById('msg').textContent = m || ''; }
+
+refresh();
+</script>
+</body>
+</html>
