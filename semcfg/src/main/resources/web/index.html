@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>语义配置合并器</title>
+    <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+<header class="topbar">
+    <div class="brand">语义配置合并器</div>
+    <div class="toolbar">
+        <span class="meta">会话版本 <b id="session-version">-</b> · 策略版本 <b id="policy-version">-</b></span>
+        <span class="meta">自动合并 <b id="stat-auto">0</b> · 冲突 <b id="stat-conflicts">0</b>
+            · 已裁决 <b id="stat-resolved">0</b> · 旧裁决建议 <b id="stat-advisory">0</b></span>
+        <button id="btn-demo">载入示例</button>
+        <button id="btn-export">导出</button>
+        <label class="file-btn">导入<input type="file" id="import-file" accept="application/json" hidden></label>
+        <button id="btn-reset" class="danger">重置</button>
+    </div>
+</header>
+
+<main class="columns">
+    <section class="pane pane-base">
+        <div class="pane-head">
+            <h2>共同祖先 (base)</h2>
+            <div class="pane-actions">
+                <select id="fmt-base"><option value="yaml">YAML</option><option value="json">JSON</option></select>
+                <button data-side="base" class="btn-edit">编辑原文</button>
+            </div>
+        </div>
+        <div id="tree-base" class="tree"></div>
+    </section>
+
+    <section class="pane pane-merged">
+        <div class="pane-head">
+            <h2>合并结果 <span id="result-fp" class="fp"></span></h2>
+            <div class="pane-actions">
+                <label>导出格式
+                    <select id="export-format">
+                        <option value="yaml">YAML</option>
+                        <option value="json">JSON</option>
+                    </select>
+                </label>
+                <button id="btn-preview">预览导出文本</button>
+            </div>
+        </div>
+        <div id="tree-merged" class="tree"></div>
+    </section>
+
+    <section class="pane pane-side">
+        <div class="pane-head">
+            <h2>分支视图</h2>
+            <div class="pane-actions">
+                <div class="seg">
+                    <button id="tab-a" class="active">分支 A</button>
+                    <button id="tab-b">分支 B</button>
+                </div>
+            </div>
+        </div>
+        <div id="tree-branch" class="tree"></div>
+        <div class="pane-head second"><h2>分支原文</h2>
+            <div class="pane-actions">
+                <select id="fmt-branch"><option value="yaml">YAML</option><option value="json">JSON</option></select>
+                <button id="btn-edit-branch" class="btn-edit">编辑原文</button>
+            </div>
+        </div>
+    </section>
+</main>
+
+<aside id="detail" class="detail hidden">
+    <div class="detail-head">
+        <h3>节点详情</h3>
+        <button id="detail-close">×</button>
+    </div>
+    <div id="detail-body"></div>
+</aside>
+
+<div id="modal" class="modal hidden">
+    <div class="modal-card">
+        <div class="modal-head"><h3 id="modal-title">编辑</h3><button id="modal-close">×</button></div>
+        <div id="modal-body"></div>
+        <div class="modal-foot">
+            <span id="modal-error" class="error"></span>
+            <button id="modal-cancel">取消</button>
+            <button id="modal-ok" class="primary">确定</button>
+        </div>
+    </div>
+</div>
+
+<div id="toast" class="toast hidden"></div>
+
+<script src="/app.js"></script>
+</body>
+</html>

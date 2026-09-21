@@ -1,0 +1,11 @@
+{
+  "version": 1,
+  "policyVersion": 1,
+  "inputFormats": {
+    "base": "yaml",
+    "branchA": "yaml",
+    "branchB": "yaml"
+  },
+  "policies": [],
+  "decisions": []
+}
