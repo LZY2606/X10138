@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>语义配置合并器</title>
+<link rel="stylesheet" href="/static/app.css">
+</head>
+<body>
+<header class="topbar">
+  <div class="brand">语义配置合并器</div>
+  <div class="meta" id="sessionMeta">尚未载入会话</div>
+  <div class="actions">
+    <button id="btnSample" type="button">载入示例</button>
+    <button id="btnImport" type="button">导入</button>
+    <button id="btnExport" type="button">导出</button>
+    <button id="btnPreview" type="button">预览导出文本</button>
+  </div>
+</header>
+
+<section class="composer" id="composer">
+  <div class="composer-col">
+    <h3>共同祖先 (base)</h3>
+    <div class="format-line">
+      <label>格式
+        <select id="baseFormat"><option>YAML</option><option>JSON</option><option>AUTO</option></select>
+      </label>
+    </div>
+    <textarea id="baseText" spellcheck="false"></textarea>
+  </div>
+  <div class="composer-col">
+    <h3>分支 A</h3>
+    <div class="format-line">
+      <label>格式
+        <select id="aFormat"><option>YAML</option><option>JSON</option><option>AUTO</option></select>
+      </label>
+    </div>
+    <textarea id="aText" spellcheck="false"></textarea>
+  </div>
+  <div class="composer-col">
+    <h3>分支 B</h3>
+    <div class="format-line">
+      <label>格式
+        <select id="bFormat"><option>YAML</option><option>JSON</option><option>AUTO</option></select>
+      </label>
+    </div>
+    <textarea id="bText" spellcheck="false"></textarea>
+  </div>
+  <div class="composer-actions">
+    <button id="btnMerge" type="button" class="primary">开始三方合并</button>
+    <button id="btnUpdateInputs" type="button" hidden>更新输入并重算</button>
+    <span id="composerError" class="error"></span>
+  </div>
+</section>
+
+<main class="workspace" hidden>
+  <div class="pane pane-base">
+    <div class="pane-head"><h2>祖先</h2><span class="fp" id="fpBase"></span></div>
+    <div class="tree" id="treeBase"></div>
+  </div>
+  <div class="pane pane-result">
+    <div class="pane-head">
+      <h2>合并结果</h2>
+      <div class="pane-tools">
+        <select id="exportFormat"><option value="YAML">YAML</option><option value="JSON">JSON</option></select>
+        <span id="conflictBadge" class="badge">0 冲突</span>
+      </div>
+    </div>
+    <div class="tree" id="treeResult"></div>
+  </div>
+  <div class="pane pane-side">
+    <div class="pane-head"><h2>分支 A / B 差异定位</h2></div>
+    <div class="side-ab">
+      <div><h3>分支 A</h3><span class="fp" id="fpA"></span><div class="tree small" id="treeA"></div></div>
+      <div><h3>分支 B</h3><span class="fp" id="fpB"></span><div class="tree small" id="treeB"></div></div>
+    </div>
+  </div>
+</main>
+
+<aside class="detail" id="detailPanel" hidden>
+  <div class="detail-head">
+    <h2 id="detailTitle">节点详情</h2>
+    <button id="btnCloseDetail" type="button">×</button>
+  </div>
+  <div id="detailBody"></div>
+</aside>
+
+<div class="overlay" id="modalOverlay" hidden>
+  <div class="modal">
+    <div class="modal-head"><h2 id="modalTitle"></h2><button id="btnCloseModal" type="button">×</button></div>
+    <div class="modal-body" id="modalBody"></div>
+    <div class="modal-foot" id="modalFoot"></div>
+  </div>
+</div>
+
+<div class="toast" id="toast" hidden></div>
+<script src="/static/app.js"></script>
+</body>
+</html>
