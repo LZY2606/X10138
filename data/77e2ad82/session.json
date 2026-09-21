@@ -1,0 +1,50 @@
+{
+  "id": "77e2ad82",
+  "createdAt": "2026-09-21T17:36:32.145811Z",
+  "title": "e2e",
+  "base": {
+    "format": "YAML",
+    "raw": "servers:\n  - {id: web, port: 80}\nname: x\n",
+    "fingerprint": "d633fd98319aad2d44a85661c73b8539f137b7ee4c75f09195a7ec2fbf38b436"
+  },
+  "a": {
+    "format": "YAML",
+    "raw": "servers:\n  - {id: web, port: 8080}\nname: x-edge\n",
+    "fingerprint": "e005fc9c67f8e1b7c7fcb3c979810a7ec2c4cdbe81ae847ed5ec42cc7c3d21c6"
+  },
+  "b": {
+    "format": "YAML",
+    "raw": "servers:\n  - {id: web, port: 80}\nname: x-prod\n",
+    "fingerprint": "4be1e395792fe2cc0f37eeb49de22fdbf4be571ca1fe874421c9c62fdea7ee54"
+  },
+  "outputFormat": "YAML",
+  "version": 2,
+  "registry": {
+    "version": 1,
+    "entries": [
+      {
+        "path": "$.servers",
+        "strategy": "ID",
+        "idField": "id"
+      }
+    ]
+  },
+  "decisions": [
+    {
+      "id": "dec-c0991a3e-2",
+      "path": "$.name",
+      "choiceId": "B",
+      "customText": null,
+      "customFormat": "YAML",
+      "baseFingerprint": "d633fd98319aad2d44a85661c73b8539f137b7ee4c75f09195a7ec2fbf38b436",
+      "aFingerprint": "e005fc9c67f8e1b7c7fcb3c979810a7ec2c4cdbe81ae847ed5ec42cc7c3d21c6",
+      "bFingerprint": "4be1e395792fe2cc0f37eeb49de22fdbf4be571ca1fe874421c9c62fdea7ee54",
+      "conflictKind": "VALUE",
+      "createdAt": "2026-09-21T17:36:31.961186Z",
+      "author": "me",
+      "baseVersion": 4,
+      "detail": null
+    }
+  ],
+  "lastResultFingerprint": "e17030f41d95af5c7b53752df02565c8745f24404e0f45375e801efd43dd0fea"
+}

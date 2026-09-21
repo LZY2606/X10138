@@ -1,0 +1,28 @@
+{
+  "id": "b75612e5",
+  "createdAt": "2026-09-21T17:36:56.395570Z",
+  "title": "count",
+  "base": {
+    "format": "YAML",
+    "raw": "servers:\n  - {id: web, port: 80}\nname: x\n",
+    "fingerprint": "d633fd98319aad2d44a85661c73b8539f137b7ee4c75f09195a7ec2fbf38b436"
+  },
+  "a": {
+    "format": "YAML",
+    "raw": "servers:\n  - {id: web, port: 8080}\nname: x-edge\n",
+    "fingerprint": "e005fc9c67f8e1b7c7fcb3c979810a7ec2c4cdbe81ae847ed5ec42cc7c3d21c6"
+  },
+  "b": {
+    "format": "YAML",
+    "raw": "servers:\n  - {id: web, port: 80}\nname: x-prod\n",
+    "fingerprint": "4be1e395792fe2cc0f37eeb49de22fdbf4be571ca1fe874421c9c62fdea7ee54"
+  },
+  "outputFormat": "YAML",
+  "version": 3,
+  "registry": {
+    "version": 0,
+    "entries": []
+  },
+  "decisions": [],
+  "lastResultFingerprint": "4721d0d42621f84bc9406f2c4dce43170eb213c02e498df589ecf7fc47580e9f"
+}

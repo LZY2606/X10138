@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>语义配置合并器</title>
+<style>
+:root {
+  --bg:#0f1420; --panel:#161c2b; --panel2:#1d2536; --line:#2a3450;
+  --text:#e6ebf5; --muted:#8b97b3; --accent:#5b9dff; --ok:#37b87a;
+  --warn:#e8a13a; --bad:#ef5b6b; --chip:#243049;
+}
+* { box-sizing:border-box; }
+body { margin:0; font:13px/1.5 -apple-system,"PingFang SC","Microsoft YaHei",Segoe UI,Roboto,sans-serif;
+  background:var(--bg); color:var(--text); }
+header { display:flex; align-items:center; gap:14px; padding:10px 16px; background:var(--panel);
+  border-bottom:1px solid var(--line); position:sticky; top:0; z-index:20; }
+header h1 { font-size:16px; margin:0; }
+button,select,input,textarea { font:inherit; color:var(--text); }
+button { background:var(--chip); border:1px solid var(--line); border-radius:6px; padding:5px 12px; cursor:pointer; }
+button:hover { border-color:var(--accent); }
+button.primary { background:var(--accent); border-color:var(--accent); color:#06101f; font-weight:600; }
+button.danger { border-color:var(--bad); color:#ffd7dc; }
+button:disabled { opacity:.45; cursor:not-allowed; }
+input,select,textarea { background:#0e1422; border:1px solid var(--line); border-radius:6px; padding:5px 8px; }
+.muted { color:var(--muted); }
+.stat { display:flex; gap:10px; align-items:center; margin-left:auto; }
+.badge { padding:2px 9px; border-radius:20px; font-weight:600; }
+.badge.auto { background:rgba(55,184,122,.15); color:var(--ok); }
+.badge.conf { background:rgba(239,91,107,.16); color:var(--bad); }
+.badge.res { background:rgba(91,157,255,.16); color:var(--accent); }
+.layout { display:grid; grid-template-columns:230px 1fr 1fr 1fr 340px; height:calc(100vh - 51px); }
+.side { border-right:1px solid var(--line); overflow:auto; padding:8px; }
+.side:last-child { border-right:none; }
+.side h3 { margin:4px 4px 8px; font-size:12px; color:var(--muted); text-transform:uppercase; letter-spacing:.05em; }
+#left { background:var(--panel); }
+.tree { font-family:ui-monospace,SFMono-Regular,Menlo,monospace; font-size:12px; }
+.node { margin:1px 0 1px 14px; }
+.node-root > .row { margin-left:0; }
+.row { display:flex; align-items:center; gap:6px; padding:2px 5px; border-radius:5px; cursor:pointer; white-space:nowrap; }
+.row:hover { background:var(--panel2); }
+.row.sel { background:#243b63; }
+.row .twist { width:12px; color:var(--muted); display:inline-block; text-align:center; }
+.dot { width:8px; height:8px; border-radius:50%; flex:none; }
+.dot.AUTO { background:var(--ok); } .dot.CONFLICT { background:var(--bad); }
+.dot.MAP,.dot.ARRAY { background:var(--accent); } .dot.BLOCKED { background:var(--warn); }
+.kv { color:var(--text); }
+.val { color:var(--muted); margin-left:4px; overflow:hidden; text-overflow:ellipsis; }
+.pill { margin-left:auto; font-size:10px; padding:0 6px; border-radius:10px; }
+.pill.AUTO { background:rgba(55,184,122,.15); color:var(--ok); }
+.pill.CONFLICT,.pill.BLOCKED { background:rgba(239,91,107,.16); color:var(--bad); }
+.pill.RESOLVED { background:rgba(91,157,255,.16); color:var(--accent); }
+.card { background:var(--panel); border:1px solid var(--line); border-radius:8px; padding:10px; margin-bottom:10px; }
+.card h4 { margin:0 0 8px; font-size:13px; }
+label.fl { display:block; margin:6px 0; color:var(--muted); }
+textarea { width:100%; min-height:90px; resize:vertical; }
+.choice { display:block; width:100%; text-align:left; margin:5px 0; }
+.choice.sel { border-color:var(--accent); background:#1a2a47; }
+.preview { white-space:pre-wrap; word-break:break-all; background:#0d1320; border:1px solid var(--line);
+  border-radius:6px; padding:7px; font-family:ui-monospace,monospace; font-size:11px; max-height:150px; overflow:auto; }
+.kvsrc { display:grid; grid-template-columns:74px 1fr; gap:3px 8px; font-size:12px; }
+.kvsrc .k { color:var(--muted); }
+.prov { font-size:11px; }
+.prov li { margin-bottom:4px; }
+.tag-del { color:var(--bad); } .tag-null { color:var(--warn); } .tag-miss { color:var(--muted); font-style:italic; }
+.sec-tabs { display:flex; gap:4px; margin-bottom:8px; }
+.sec-tabs button { flex:1; padding:4px; font-size:12px; }
+.confitem { padding:6px 8px; border-radius:6px; margin-bottom:4px; background:var(--panel2); cursor:pointer; font-size:11px; }
+.confitem:hover { outline:1px solid var(--accent); }
+.confitem .p { color:var(--accent); word-break:break-all; }
+.toast { position:fixed; bottom:16px; left:50%; transform:translateX(-50%); background:#20304f;
+  border:1px solid var(--accent); padding:9px 16px; border-radius:8px; z-index:50; display:none; max-width:70%; }
+.toast.err { border-color:var(--bad); }
+.col-head { padding:6px 8px; font-weight:600; color:var(--muted); display:flex; justify-content:space-between; align-items:center; }
+.anchor-hint { color:#c9a23a; font-size:10px; }
+</style>
+</head>
+<body>
+<header>
+  <h1>语义配置合并器</h1>
+  <button id="btn-new">新建会话</button>
+  <select id="sessions"></select>
+  <button id="btn-merge" class="primary" disabled>运行三向合并</button>
+  <div class="stat">
+    <span class="badge auto" id="st-auto">自动 0</span>
+    <span class="badge conf" id="st-conf">冲突 0</span>
+    <span class="badge res" id="st-res">已决 0</span>
+    <span class="muted" id="st-ver"></span>
+  </div>
+</header>
+
+<div class="layout">
+  <div class="side" id="left">
+    <div class="card">
+      <h4>输入</h4>
+      <label class="fl">标题 <input id="title" style="width:100%"></label>
+      <button class="choice" data-in="base">共同祖先 (base)</button>
+      <button class="choice" data-in="a">分支 A</button>
+      <button class="choice" data-in="b">分支 B</button>
+      <div id="fp" class="muted" style="font-size:10px; margin-top:6px; word-break:break-all"></div>
+    </div>
+    <div class="card">
+      <h4>数组策略</h4>
+      <label class="fl">路径 <input id="strat-path" placeholder="如 servers" style="width:100%"></label>
+      <label class="fl">策略
+        <select id="strat-kind" style="width:100%">
+          <option value="REPLACE">替换（整组选一边）</option>
+          <option value="ID">按稳定 id 合并</option>
+          <option value="SEQUENCE">有序序列（diff3）</option>
+        </select>
+      </label>
+      <label class="fl">id 字段 <input id="strat-idfield" value="id" style="width:100%"></label>
+      <button id="strat-add" class="primary" style="width:100%">登记策略</button>
+      <div id="strat-list" style="margin-top:8px"></div>
+    </div>
+    <div class="card">
+      <h4>待解决冲突</h4>
+      <div id="conf-list"><div class="muted">运行合并后显示</div></div>
+    </div>
+  </div>
+
+  <div class="side"><div class="col-head"><span>共同祖先</span><span id="fmt-base"></span></div><div id="tree-base" class="tree"></div></div>
+  <div class="side"><div class="col-head"><span>分支 A</span><span id="fmt-a"></span></div><div id="tree-a" class="tree"></div></div>
+  <div class="side"><div class="col-head"><span>分支 B</span><span id="fmt-b"></span></div><div id="tree-b" class="tree"></div></div>
+
+  <div class="side" id="right">
+    <div class="sec-tabs">
+      <button id="tab-detail" class="primary">节点/裁决</button>
+      <button id="tab-export">导出预览</button>
+      <button id="tab-history">裁决历史</button>
+    </div>
+    <div id="pane-detail">
+      <div class="card"><div class="muted">在任意三栏树中选择一个节点，查看三方值、来源链与冲突原因。</div></div>
+    </div>
+    <div id="pane-export" style="display:none">
+      <div class="card">
+        <h4>结果预览</h4>
+        <select id="out-format"><option value="YAML">YAML</option><option value="JSON">JSON</option></select>
+        <div id="export-preview" class="preview" style="max-height:300px; margin-top:8px"></div>
+        <div class="muted" id="export-fp" style="margin-top:6px; font-size:10px; word-break:break-all"></div>
+        <button id="btn-export" class="primary" style="width:100%; margin-top:8px" disabled>下载合并包 (.json)</button>
+        <label class="fl" style="margin-top:8px">导入合并包（重放校验）</label>
+        <input type="file" id="import-file" accept=".json,application/json" style="width:100%">
+      </div>
+    </div>
+    <div id="pane-history" style="display:none"><div class="card"><div id="history" class="muted">暂无</div></div></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+<script src="/app.js"></script>
+</body>
+</html>

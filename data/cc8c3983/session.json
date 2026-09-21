@@ -1,0 +1,28 @@
+{
+  "id": "cc8c3983",
+  "createdAt": "2026-09-21T17:37:12.765803Z",
+  "title": "ns",
+  "base": {
+    "format": "YAML",
+    "raw": "xs:\n  - 1\n  - 2\n",
+    "fingerprint": "e05da2a0b513830e4bb4b923ef446ab6544fb1f51ba3cee42a2957fa2da9889d"
+  },
+  "a": {
+    "format": "YAML",
+    "raw": "xs:\n  - 1\n  - 2\n  - 3\n",
+    "fingerprint": "0d9fa1474a97e13a5291a2be9754a1f5ffb15e7425b615425a3400147710a14c"
+  },
+  "b": {
+    "format": "YAML",
+    "raw": "xs:\n  - 0\n  - 1\n  - 2\n",
+    "fingerprint": "970505196126526905c5b51c41aba45c713cb094d5ae59e4521954751c9ee2b3"
+  },
+  "outputFormat": "YAML",
+  "version": 3,
+  "registry": {
+    "version": 0,
+    "entries": []
+  },
+  "decisions": [],
+  "lastResultFingerprint": "4721d0d42621f84bc9406f2c4dce43170eb213c02e498df589ecf7fc47580e9f"
+}

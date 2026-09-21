@@ -1,0 +1,16 @@
+{
+  "id": "df99bc8a",
+  "createdAt": "2026-09-21T17:34:43.961990Z",
+  "title": "demo",
+  "base": null,
+  "a": null,
+  "b": null,
+  "outputFormat": "YAML",
+  "version": 0,
+  "registry": {
+    "version": 0,
+    "entries": []
+  },
+  "decisions": [],
+  "lastResultFingerprint": null
+}
